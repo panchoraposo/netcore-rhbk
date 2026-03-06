@@ -5,7 +5,7 @@ This repository contains a demo reference implementation for a banking scenario 
 ## Architecture (high level)
 
 ```mermaid
-flowchart LR
+graph LR
   User[BankUser] --> Frontend[portal (ASP.NET Core 10)]
   Frontend -->|"OIDC Auth Code + PKCE"| Keycloak[RHBK (Keycloak)]
   Keycloak -->|"LDAP user + group federation"| LDAP[LDAP (generic)]
@@ -143,7 +143,7 @@ The backend is a minimal API configured in `apps/backend/Program.cs`.
 ## GitOps and automation model
 
 ```mermaid
-flowchart TB
+graph TB
   Git[Git repo] --> Argo[OpenShift GitOps (Argo CD)]
   Argo --> LDAPRes[LDAP resources]
   Argo --> KeycloakRes[Keycloak + DB + realm config]

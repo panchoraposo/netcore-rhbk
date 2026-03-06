@@ -122,7 +122,7 @@ The backend is a minimal API configured in `apps/backend/Program.cs`.
     - `/api/audit` → `AuditorsOnly`
     - `/api/admin` → `AdminsOnly`
 
-### End-to-end mental model (what to explain in a dev handover)
+### End-to-end mental model
 
 - **LDAP** remains the authorization system-of-record: change group membership in LDAP.
 - **Keycloak** federates LDAP and emits group membership into tokens as `groups`.

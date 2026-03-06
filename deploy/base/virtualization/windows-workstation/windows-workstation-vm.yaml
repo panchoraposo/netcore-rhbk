@@ -1,0 +1,46 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: windows-workstation
+  labels:
+    app.kubernetes.io/name: windows-workstation
+spec:
+  # This VM is intentionally not auto-started because Windows images/licenses
+  # are environment-specific. Provide a PVC/DataVolume and then set running:true.
+  running: false
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: windows-workstation
+        app.kubernetes.io/name: windows-workstation
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        resources:
+          requests:
+            memory: 8Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          persistentVolumeClaim:
+            # Create/provide this PVC in your environment (Windows OS preinstalled).
+            claimName: windows-workstation-disk
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              # Placeholder: Windows provisioning is typically done via sysprep/unattend.

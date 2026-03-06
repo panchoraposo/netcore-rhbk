@@ -1,0 +1,32 @@
+@page
+@model MateBank.Frontend.Pages.CallApiModel
+@{
+    ViewData["Title"] = "Call API";
+}
+
+<h2>Call API</h2>
+
+<div class="card mb-3">
+    <div class="card-header">Request</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Path</dt>
+            <dd class="col-sm-9"><code>@Model.Path</code></dd>
+            <dt class="col-sm-3">Backend</dt>
+            <dd class="col-sm-9"><code>@Model.BackendBaseUrl</code></dd>
+            <dt class="col-sm-3">Result</dt>
+            <dd class="col-sm-9">
+                <span class="badge @(Model.Success ? "text-bg-success" : "text-bg-danger")">
+                    @(Model.Success ? "Success" : "Denied / Error")
+                </span>
+            </dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Response</div>
+    <div class="card-body">
+        <pre class="mb-0 text-wrap">@Model.ResponseBody</pre>
+    </div>
+</div>

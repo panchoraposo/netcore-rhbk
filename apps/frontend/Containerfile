@@ -1,0 +1,24 @@
+FROM registry.access.redhat.com/ubi9/dotnet-100 AS build
+ENV HOME=/tmp \
+    DOTNET_CLI_HOME=/tmp \
+    NUGET_PACKAGES=/tmp/nuget
+WORKDIR /tmp
+RUN mkdir -p /tmp/src /tmp/nuget && chmod -R 0777 /tmp/src /tmp/nuget
+WORKDIR /tmp/src
+
+COPY . .
+
+RUN mkdir -p /tmp/obj && chmod -R 0777 /tmp/obj
+RUN dotnet restore ./MateBank.Frontend.csproj -p:BaseIntermediateOutputPath=/tmp/obj/ -p:MSBuildProjectExtensionsPath=/tmp/obj/
+RUN mkdir -p /tmp/out && chmod -R 0777 /tmp/out
+RUN dotnet publish ./MateBank.Frontend.csproj -c Release -o /tmp/out --no-restore -p:BaseIntermediateOutputPath=/tmp/obj/ -p:MSBuildProjectExtensionsPath=/tmp/obj/
+
+FROM registry.access.redhat.com/ubi9/dotnet-100-aspnet
+WORKDIR /app
+
+COPY --from=build /tmp/out .
+
+ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "MateBank.Frontend.dll"]

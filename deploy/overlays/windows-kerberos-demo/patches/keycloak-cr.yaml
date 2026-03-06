@@ -1,0 +1,35 @@
+apiVersion: k8s.keycloak.org/v2alpha1
+kind: Keycloak
+metadata:
+  name: mate-keycloak
+spec:
+  hostname:
+    hostname: sso.matebank.demo
+    strict: true
+  unsupported:
+    podTemplate:
+      spec:
+        volumes:
+          - name: krb5-conf
+            configMap:
+              name: krb5-conf
+              items:
+                - key: krb5.conf
+                  path: krb5.conf
+          - name: krb5-keytab
+            secret:
+              secretName: kerberos-keytab
+              items:
+                - key: http.keytab
+                  path: http.keytab
+        containers:
+          - name: keycloak
+            volumeMounts:
+              - name: krb5-conf
+                mountPath: /etc/krb5.conf
+                subPath: krb5.conf
+                readOnly: true
+              - name: krb5-keytab
+                mountPath: /etc/krb5.keytab
+                subPath: http.keytab
+                readOnly: true

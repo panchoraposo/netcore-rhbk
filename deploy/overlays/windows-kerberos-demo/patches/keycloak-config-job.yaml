@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mate-keycloak-config
+spec:
+  template:
+    spec:
+      containers:
+        - name: keycloak-config-cli
+          env:
+            - name: KEYCLOAK_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: kerberos-demo-env
+                  key: KEYCLOAK_HOST
+            - name: KERBEROS_REALM
+              valueFrom:
+                configMapKeyRef:
+                  name: kerberos-demo-env
+                  key: KERBEROS_REALM
+
+            - name: LDAP_BIND_CREDENTIAL
+              valueFrom:
+                secretKeyRef:
+                  name: mate-demo-config
+                  key: LDAP_BIND_CREDENTIAL

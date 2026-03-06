@@ -1,0 +1,67 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mate-portal-gateway
+  annotations:
+    networking.istio.io/service-type: ClusterIP
+  labels:
+    app.kubernetes.io/name: mate-portal-gateway
+    app.kubernetes.io/component: gateway
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mate-portal
+  labels:
+    app.kubernetes.io/name: mate-portal
+    app.kubernetes.io/component: gateway
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: mate-portal-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: x-forwarded-proto
+                value: https
+              - name: x-forwarded-port
+                value: "443"
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: mate-portal
+          port: 80
+          weight: 1
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: portal
+  labels:
+    app.kubernetes.io/name: mate-portal
+    app.kubernetes.io/component: gateway
+spec:
+  to:
+    kind: Service
+    name: mate-portal-gateway-istio
+  port:
+    targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

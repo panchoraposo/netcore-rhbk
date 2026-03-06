@@ -1,0 +1,65 @@
+@page
+@model MateBank.Frontend.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<h2>Profile</h2>
+
+<p class="text-muted mb-3">
+    This page shows the identity and authorization signals visible to the frontend after OIDC login.
+</p>
+
+<div class="card mb-3">
+    <div class="card-header">User</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Authenticated</dt>
+            <dd class="col-sm-9">@User.Identity?.IsAuthenticated</dd>
+            <dt class="col-sm-3">Name</dt>
+            <dd class="col-sm-9">@User.Identity?.Name</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Groups (claim: @Model.GroupClaimType)</div>
+    <div class="card-body">
+        @if (Model.Groups.Length == 0)
+        {
+            <p class="mb-0 text-muted">No groups claim found.</p>
+        }
+        else
+        {
+            <ul class="mb-0">
+                @foreach (var g in Model.Groups)
+                {
+                    <li><code>@g</code></li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">All claims</div>
+    <div class="card-body">
+        <table class="table table-sm mb-0">
+            <thead>
+            <tr>
+                <th>Type</th>
+                <th>Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var c in Model.Claims)
+            {
+                <tr>
+                    <td><code>@c.Type</code></td>
+                    <td class="text-break"><code>@c.Value</code></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

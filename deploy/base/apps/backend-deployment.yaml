@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mate-backend
+  labels:
+    app.kubernetes.io/name: mate-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mate-backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mate-backend
+    spec:
+      containers:
+        - name: backend
+          image: mate-backend:latest
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: Auth__Authority
+              valueFrom:
+                configMapKeyRef:
+                  name: mate-app-config
+                  key: KEYCLOAK_AUTHORITY
+            - name: Auth__Audience
+              value: "mate-backend"
+            - name: Auth__RequireHttpsMetadata
+              value: "true"
+            - name: Cors__AllowedOrigins__0
+              valueFrom:
+                configMapKeyRef:
+                  name: mate-app-config
+                  key: FRONTEND_PUBLIC_URL
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20

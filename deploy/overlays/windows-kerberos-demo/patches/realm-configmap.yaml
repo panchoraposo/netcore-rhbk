@@ -1,0 +1,201 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mate-bank-realm
+data:
+  mate-bank-realm.json: |
+    {
+      "realm": "mate-bank",
+      "enabled": true,
+      "displayName": "MateBank Demo (Kerberos)",
+      "sslRequired": "external",
+      "loginWithEmailAllowed": true,
+      "registrationAllowed": false,
+      "resetPasswordAllowed": false,
+      "rememberMe": false,
+
+      "authenticationFlows": [
+        {
+          "alias": "browser",
+          "description": "browser based authentication",
+          "providerId": "basic-flow",
+          "topLevel": true,
+          "builtIn": true,
+          "authenticationExecutions": [
+            {
+              "authenticator": "auth-cookie",
+              "requirement": "ALTERNATIVE",
+              "priority": 10,
+              "userSetupAllowed": false,
+              "autheticatorFlow": false
+            },
+            {
+              "authenticator": "auth-spnego",
+              "requirement": "ALTERNATIVE",
+              "priority": 20,
+              "userSetupAllowed": false,
+              "autheticatorFlow": false
+            },
+            {
+              "authenticator": "identity-provider-redirector",
+              "requirement": "ALTERNATIVE",
+              "priority": 25,
+              "userSetupAllowed": false,
+              "autheticatorFlow": false
+            },
+            {
+              "requirement": "ALTERNATIVE",
+              "priority": 30,
+              "flowAlias": "forms",
+              "userSetupAllowed": false,
+              "autheticatorFlow": true
+            }
+          ]
+        }
+      ],
+
+      "clients": [
+        {
+          "clientId": "mate-portal",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "secret": "$(env:MATE_PORTAL_CLIENT_SECRET)",
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": false,
+          "serviceAccountsEnabled": false,
+          "redirectUris": $(env:MATE_PORTAL_REDIRECT_URIS_JSON),
+          "webOrigins": $(env:MATE_PORTAL_WEB_ORIGINS_JSON),
+          "attributes": {
+            "pkce.code.challenge.method": "S256"
+          },
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "full.path": "true",
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "true",
+                "claim.name": "groups"
+              }
+            },
+            {
+              "name": "mate-backend-audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "mate-backend",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            }
+          ]
+        },
+        {
+          "clientId": "mate-backend",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "bearerOnly": true
+        },
+        {
+          "clientId": "mate-cli",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "secret": "$(env:MATE_CLI_CLIENT_SECRET)",
+          "standardFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "protocolMappers": [
+            {
+              "name": "groups",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-group-membership-mapper",
+              "consentRequired": false,
+              "config": {
+                "full.path": "true",
+                "id.token.claim": "false",
+                "access.token.claim": "true",
+                "userinfo.token.claim": "false",
+                "claim.name": "groups"
+              }
+            },
+            {
+              "name": "mate-backend-audience",
+              "protocol": "openid-connect",
+              "protocolMapper": "oidc-audience-mapper",
+              "consentRequired": false,
+              "config": {
+                "included.client.audience": "mate-backend",
+                "id.token.claim": "false",
+                "access.token.claim": "true"
+              }
+            }
+          ]
+        }
+      ],
+
+      "components": {
+        "org.keycloak.storage.UserStorageProvider": [
+          {
+            "name": "ldap-ad",
+            "providerId": "ldap",
+            "subComponents": {
+              "org.keycloak.storage.ldap.mappers.LDAPStorageMapper": [
+                {
+                  "name": "ldap-groups",
+                  "providerId": "group-ldap-mapper",
+                  "config": {
+                    "mode": [ "LDAP_ONLY" ],
+                    "groups.dn": [ "$(env:LDAP_GROUPS_DN)" ],
+                    "group.object.classes": [ "group" ],
+                    "group.name.ldap.attribute": [ "cn" ],
+                    "membership.ldap.attribute": [ "member" ],
+                    "membership.user.ldap.attribute": [ "sAMAccountName" ],
+                    "membership.attribute.type": [ "DN" ],
+                    "user.roles.retrieve.strategy": [ "LOAD_GROUPS_BY_MEMBER_ATTRIBUTE" ],
+                    "preserve.group.inheritance": [ "true" ],
+                    "ignore.missing.groups": [ "true" ],
+                    "drop.non.existing.groups.during.sync": [ "true" ]
+                  }
+                }
+              ]
+            },
+            "config": {
+              "enabled": [ "true" ],
+              "priority": [ "0" ],
+              "vendor": [ "ad" ],
+              "connectionUrl": [ "$(env:LDAP_CONNECTION_URL)" ],
+              "usersDn": [ "$(env:LDAP_USERS_DN)" ],
+              "bindDn": [ "$(env:LDAP_BIND_DN)" ],
+              "bindCredential": [ "$(env:LDAP_BIND_CREDENTIAL)" ],
+              "authType": [ "simple" ],
+              "editMode": [ "READ_ONLY" ],
+              "searchScope": [ "1" ],
+              "usernameLDAPAttribute": [ "sAMAccountName" ],
+              "rdnLDAPAttribute": [ "cn" ],
+              "uuidLDAPAttribute": [ "objectGUID" ],
+              "userObjectClasses": [ "person, organizationalPerson, user" ],
+              "pagination": [ "true" ],
+              "connectionPooling": [ "true" ],
+              "fullSyncPeriod": [ "-1" ],
+              "changedSyncPeriod": [ "-1" ],
+              "syncRegistrations": [ "false" ],
+
+              "allowKerberosAuthentication": [ "true" ],
+              "useKerberosForPasswordAuthentication": [ "false" ],
+              "kerberosRealm": [ "$(env:KERBEROS_REALM)" ],
+              "serverPrincipal": [ "HTTP/$(env:KEYCLOAK_HOST)@$(env:KERBEROS_REALM)" ],
+              "keyTab": [ "/etc/krb5.keytab" ],
+              "kerberosPrincipalAttribute": [ "userPrincipalName" ]
+            }
+          }
+        ]
+      }
+    }

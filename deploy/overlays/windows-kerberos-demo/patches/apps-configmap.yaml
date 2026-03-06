@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mate-app-config
+data:
+  FRONTEND_PUBLIC_URL: "https://portal.matebank.demo"
+  BACKEND_PUBLIC_URL: "https://api.matebank.demo"
+  KEYCLOAK_AUTHORITY: "https://sso.matebank.demo/realms/mate-bank"

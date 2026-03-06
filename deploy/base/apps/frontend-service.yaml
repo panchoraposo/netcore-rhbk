@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mate-portal
+  labels:
+    app.kubernetes.io/name: mate-portal
+spec:
+  selector:
+    app.kubernetes.io/name: mate-portal
+    app.kubernetes.io/component: portal
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

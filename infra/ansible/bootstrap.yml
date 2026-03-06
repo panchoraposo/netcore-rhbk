@@ -1,0 +1,24 @@
+- name: Bootstrap Bank Demo (GitOps apps)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    repo_url: "{{ repo_url | default(omit) }}"
+
+  tasks:
+    - name: Require repo_url
+      ansible.builtin.assert:
+        that:
+          - repo_url is defined
+          - repo_url | length > 0
+        fail_msg: "Set -e repo_url=https://your.git/repo.git"
+
+    - name: Render Argo CD Applications manifest
+      ansible.builtin.template:
+        src: templates/bank-demo-applications.yaml.j2
+        dest: /tmp/bank-demo-applications.yaml
+        mode: "0600"
+
+    - name: Apply Argo CD Applications
+      kubernetes.core.k8s:
+        state: present
+        src: /tmp/bank-demo-applications.yaml

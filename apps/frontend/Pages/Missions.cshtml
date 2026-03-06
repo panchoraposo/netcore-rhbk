@@ -1,0 +1,141 @@
+@page
+@model MateBank.Frontend.Pages.MissionsModel
+@{
+    ViewData["Title"] = "Missions";
+}
+
+<div class="hero hero-compact mb-4">
+    <div class="container">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <h1 class="h3 mb-1">Missions</h1>
+                <p class="mb-0 text-muted">
+                    Try real backend endpoints using your Keycloak access token. Access is decided by LDAP group membership exposed as the <code>@Model.GroupClaimType</code> claim.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-light" asp-page="/Profile">View my claims</a>
+                <a class="btn btn-light" asp-page="/Missions">Refresh</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row g-3">
+        @foreach (var m in Model.Missions
+            .OrderByDescending(m => Model.IsAllowed(m))
+            .ThenBy(m => m.Title, StringComparer.Ordinal))
+        {
+            var allowed = Model.IsAllowed(m);
+            <div class="col-12 col-lg-6">
+                <div class="card card-hover h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <h2 class="h5 mb-1">@m.Title</h2>
+                                <p class="text-muted mb-2">@m.Description</p>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    @if (!string.IsNullOrWhiteSpace(m.RequiredGroup))
+                                    {
+                                        <span class="badge text-bg-secondary">requires <code>@m.RequiredGroup</code></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-secondary">requires <span class="text-muted">any authenticated user</span></span>
+                                    }
+                                    <span class="badge @(allowed ? "text-bg-success" : "text-bg-danger")">
+                                        @(allowed ? "Authorized" : "Not authorized")
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="mb-2">
+                                    <span class="badge text-bg-dark"><code>@m.EndpointPath</code></span>
+                                </div>
+                                <a class="btn btn-sm btn-primary" asp-page="/Missions" asp-route-try="@m.Key">Run</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.LastStatusCode is not null)
+    {
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <span>Last run</span>
+                    @if (!string.IsNullOrWhiteSpace(Model.LastMissionTitle))
+                    {
+                        <span class="badge text-bg-dark">@Model.LastMissionTitle</span>
+                    }
+                </div>
+                <span class="badge @(Model.LastStatusCode >= 200 && Model.LastStatusCode < 300 ? "text-bg-success" : "text-bg-danger")">
+                    HTTP @Model.LastStatusCode
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-2 text-muted">Endpoint: <code>@Model.LastEndpoint</code></div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.LastMissionBriefing))
+                {
+                    <div class="mb-3">
+                        <div class="small text-muted mb-1">Briefing</div>
+                        <div class="p-3 rounded-3 border bg-body-tertiary">
+                            @Model.LastMissionBriefing
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            @if (!string.IsNullOrWhiteSpace(Model.LastMissionRequiredGroup))
+                            {
+                                <span class="badge text-bg-secondary">requires <code>@Model.LastMissionRequiredGroup</code></span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.LastActorUsername))
+                            {
+                                <span class="badge text-bg-dark">actor <code>@Model.LastActorUsername</code></span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Model.LastIssuedAtUtc))
+                            {
+                                <span class="badge text-bg-dark">issued <code>@Model.LastIssuedAtUtc</code></span>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (Model.LastDemoCards.Length > 0)
+                {
+                    <div class="row g-3">
+                        @foreach (var card in Model.LastDemoCards)
+                        {
+                            <div class="col-12 col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        <span class="fw-semibold">@card.Title</span>
+                                    </div>
+                                    <div class="card-body">
+                                        <pre class="mb-0 text-wrap mb-json-pre"><code class="mb-json">@Html.Raw(Model.FormatJsonLikeJq(card.Body))</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <pre class="mb-0 text-wrap mb-json-pre"><code class="mb-json">@Html.Raw(Model.FormatJsonLikeJq(Model.LastResponseBody))</code></pre>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.LastPrettyJson))
+                {
+                    <details class="mt-3">
+                        <summary class="text-muted">Raw JSON</summary>
+                        <pre class="mt-2 mb-0 text-wrap mb-json-pre"><code class="mb-json">@Html.Raw(Model.FormatJsonLikeJq(Model.LastPrettyJson))</code></pre>
+                    </details>
+                }
+            </div>
+        </div>
+    }
+</div>
+

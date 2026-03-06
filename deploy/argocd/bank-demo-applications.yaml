@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bank-demo-ldap
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: default
+  source:
+    repoURL: "REPO_URL"
+    targetRevision: "main"
+    path: deploy/overlays/demo/ldap
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: bank-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bank-demo-keycloak
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  project: default
+  source:
+    repoURL: "REPO_URL"
+    targetRevision: "main"
+    path: deploy/overlays/demo/keycloak
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: bank-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bank-demo-apps
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "30"
+spec:
+  project: default
+  source:
+    repoURL: "REPO_URL"
+    targetRevision: "main"
+    path: deploy/overlays/demo/apps
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: bank-demo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

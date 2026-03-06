@@ -1,0 +1,121 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: samba-ad
+  labels:
+    app.kubernetes.io/name: samba-ad
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: samba-ad
+        app.kubernetes.io/name: samba-ad
+    spec:
+      domain:
+        cpu:
+          cores: 2
+        resources:
+          requests:
+            memory: 4Gi
+        devices:
+          disks:
+            - name: containerdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            # Override this image in your overlay if desired.
+            image: quay.io/containerdisks/fedora:40
+        - name: cloudinitdisk
+          cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              hostname: ad1
+              fqdn: ad1.matebank.demo
+              manage_etc_hosts: true
+              package_update: true
+              package_upgrade: true
+              write_files:
+                - path: /usr/local/bin/matebank-provision-samba-ad.sh
+                  permissions: "0750"
+                  owner: root:root
+                  content: |
+                    #!/usr/bin/env bash
+                    set -euo pipefail
+
+                    REALM="${REALM:-MATEBANK.DEMO}"
+                    DOMAIN_NETBIOS="${DOMAIN_NETBIOS:-MATEBANK}"
+                    ADMIN_PASSWORD="${ADMIN_PASSWORD:-Admin123!}"
+                    OPENSHIFT_ROUTER_IP="${OPENSHIFT_ROUTER_IP:-192.0.2.10}"
+                    KEYCLOAK_FQDN="${KEYCLOAK_FQDN:-sso.matebank.demo}"
+                    KEYCLOAK_SERVICE_USER="${KEYCLOAK_SERVICE_USER:-keycloak-http}"
+                    KEYCLOAK_SERVICE_PASSWORD="${KEYCLOAK_SERVICE_PASSWORD:-KeycloakHttp123!}"
+
+                    dnf -y install samba samba-dc krb5-workstation bind-utils || true
+
+                    # Provision domain controller (idempotent-ish)
+                    if [ ! -f /var/lib/samba/private/sam.ldb ]; then
+                      samba-tool domain provision \
+                        --use-rfc2307 \
+                        --realm="${REALM}" \
+                        --domain="${DOMAIN_NETBIOS}" \
+                        --server-role=dc \
+                        --dns-backend=SAMBA_INTERNAL \
+                        --adminpass="${ADMIN_PASSWORD}"
+                    fi
+
+                    systemctl enable --now samba || systemctl enable --now samba-ad-dc
+
+                    # Create OUs
+                    samba-tool ou create "OU=People" || true
+                    samba-tool ou create "OU=Groups" || true
+
+                    # Users
+                    samba-tool user create "juan.perez" "juanPassword" --given-name "Juan" --surname "Perez" || true
+                    samba-tool user create "maria.gomez" "mariaPassword" --given-name "Maria" --surname "Gomez" || true
+                    samba-tool user create "sofia.fernandez" "sofiaPassword" --given-name "Sofia" --surname "Fernandez" || true
+                    samba-tool user create "diego.rodriguez" "diegoPassword" --given-name "Diego" --surname "Rodriguez" || true
+                    samba-tool user create "it.admin" "itAdminPassword" --given-name "IT" --surname "Admin" || true
+                    samba-tool user create "nico.paz" "nicoPassword" --given-name "Nicolas" --surname "Paz" || true
+
+                    # Groups
+                    samba-tool group add "branch-tellers" || true
+                    samba-tool group add "risk-analysts" || true
+                    samba-tool group add "credit-approvers" || true
+                    samba-tool group add "auditors" || true
+                    samba-tool group add "it-admins" || true
+
+                    samba-tool group addmembers "branch-tellers" "juan.perez" "maria.gomez" || true
+                    samba-tool group addmembers "risk-analysts" "sofia.fernandez" || true
+                    samba-tool group addmembers "credit-approvers" "diego.rodriguez" || true
+                    samba-tool group addmembers "auditors" "maria.gomez" "sofia.fernandez" || true
+                    samba-tool group addmembers "it-admins" "it.admin" || true
+
+                    # Add A record so Windows clients resolve Keycloak to the OpenShift router.
+                    # NOTE: This assumes the AD DNS zone matches the kerberos domain suffix.
+                    DNS_ZONE="$(echo "${KEYCLOAK_FQDN}" | awk -F. '{print $(NF-1)"."$NF}')"
+                    DNS_HOST="$(echo "${KEYCLOAK_FQDN}" | awk -F. '{print $1}')"
+                    samba-tool dns add 127.0.0.1 "${DNS_ZONE}" "${DNS_HOST}" A "${OPENSHIFT_ROUTER_IP}" -U "Administrator%${ADMIN_PASSWORD}" || true
+
+                    # Create service user + SPN and export keytab for Keycloak (HTTP/<FQDN>)
+                    samba-tool user create "${KEYCLOAK_SERVICE_USER}" "${KEYCLOAK_SERVICE_PASSWORD}" || true
+                    samba-tool spn add "HTTP/${KEYCLOAK_FQDN}" "${KEYCLOAK_SERVICE_USER}" || true
+                    if [ ! -f /root/http.keytab ]; then
+                      samba-tool domain exportkeytab /root/http.keytab \
+                        --principal="HTTP/${KEYCLOAK_FQDN}@${REALM}" \
+                        -U "Administrator%${ADMIN_PASSWORD}" || true
+                    fi
+
+              runcmd:
+                - [ bash, -lc, "/usr/local/bin/matebank-provision-samba-ad.sh" ]

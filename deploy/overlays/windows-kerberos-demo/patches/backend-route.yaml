@@ -1,0 +1,6 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: mate-backend
+spec:
+  host: api.matebank.demo

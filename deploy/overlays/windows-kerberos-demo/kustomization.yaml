@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: mate-bank-kerberos-demo
+
+resources:
+  - namespace.yaml
+  - ../../base/keycloak
+  - ../../base/apps
+  - ../../base/virtualization/samba-ad
+  - ../../base/virtualization/windows-workstation
+  - kerberos-keytab-secret.yaml
+
+configMapGenerator:
+  - name: kerberos-demo-env
+    literals:
+      - KEYCLOAK_HOST=sso.matebank.demo
+      - PORTAL_HOST=portal.matebank.demo
+      - BACKEND_HOST=api.matebank.demo
+      - KERBEROS_REALM=MATEBANK.DEMO
+      - OPENSHIFT_ROUTER_IP=192.0.2.10
+  - name: krb5-conf
+    files:
+      - krb5.conf=krb5.conf
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+patches:
+  - path: patches/keycloak-cr.yaml
+  - path: patches/keycloak-route.yaml
+  - path: patches/portal-route.yaml
+  - path: patches/backend-route.yaml
+  - path: patches/apps-configmap.yaml
+  - path: patches/mate-demo-config-secret.yaml
+  - path: patches/keycloak-config-job.yaml
+  - path: patches/realm-configmap.yaml

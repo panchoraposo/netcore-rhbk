@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mate-backend
+  labels:
+    app.kubernetes.io/name: mate-backend
+spec:
+  selector:
+    app.kubernetes.io/name: mate-backend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

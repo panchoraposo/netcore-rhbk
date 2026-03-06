@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: dirsrv
+  labels:
+    app.kubernetes.io/name: dirsrv
+spec:
+  serviceName: dirsrv
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dirsrv
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dirsrv
+    spec:
+      serviceAccountName: dirsrv-sa
+      initContainers:
+        - name: fix-permissions
+          image: registry.access.redhat.com/ubi9/ubi-micro
+          command: ["sh", "-c", "chown -R 389:389 /data || true"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      containers:
+        - name: dirsrv
+          image: registry.redhat.io/dirsrv/dirsrv-container-rhel10
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: ldap
+              containerPort: 3389
+          env:
+            - name: DS_DM_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dirsrv-dm-password
+                  key: dm-password
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: 3389
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 3389
+            initialDelaySeconds: 30
+            periodSeconds: 20
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

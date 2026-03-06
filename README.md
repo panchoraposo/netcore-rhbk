@@ -6,10 +6,10 @@ This repository contains a demo reference implementation for a banking scenario 
 
 ```mermaid
 graph LR
-  User[BankUser] --> Frontend[portal (ASP.NET Core 10)]
-  Frontend -->|"OIDC Auth Code + PKCE"| Keycloak[RHBK (Keycloak)]
-  Keycloak -->|"LDAP user + group federation"| LDAP[LDAP (generic)]
-  Frontend -->|"API call with access token (JWT)"| Backend[backend (ASP.NET Core 10)]
+  User["Bank user"] --> Frontend["Portal (ASP.NET Core 10)"]
+  Frontend -->|"OIDC Auth Code + PKCE"| Keycloak["RHBK (Keycloak)"]
+  Keycloak -->|"LDAP user + group federation"| LDAP["LDAP (generic)"]
+  Frontend -->|"API call with access token (JWT)"| Backend["Backend (ASP.NET Core 10)"]
   Backend -->|"JWT validation + authz policies (groups claim)"| Backend
 ```
 
@@ -144,11 +144,11 @@ The backend is a minimal API configured in `apps/backend/Program.cs`.
 
 ```mermaid
 graph TB
-  Git[Git repo] --> Argo[OpenShift GitOps (Argo CD)]
-  Argo --> LDAPRes[LDAP resources]
-  Argo --> KeycloakRes[Keycloak + DB + realm config]
-  Argo --> AppsRes[frontend + backend]
-  Ansible[Ansible bootstrap] --> Argo
+  Git["Git repo"] --> Argo["OpenShift GitOps (Argo CD)"]
+  Argo --> LDAPRes["LDAP resources"]
+  Argo --> KeycloakRes["Keycloak + DB + realm config"]
+  Argo --> AppsRes["Frontend + backend"]
+  Ansible["Ansible bootstrap"] --> Argo
 ```
 
 - **Argo CD** is the single source of truth for deployed resources.
